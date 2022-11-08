@@ -517,6 +517,11 @@ class ReactExoplayerView extends FrameLayout implements
                                     return;
                                 }
 
+                                if (activity == null) {
+                                    Log.e("ExoPlayer Exception", "Activity null when trying to initialize player source");
+                                    return;
+                                }
+
                                 // Initialize handler to run on the main thread
                                 activity.runOnUiThread(new Runnable() {
                                     public void run() {
