@@ -975,6 +975,7 @@ class ReactExoplayerView extends FrameLayout implements
                 text += "ready";
                 eventEmitter.ready();
                 onBuffering(false);
+                clearProgressMessageHandler(); // ensure there is no other message
                 startProgressHandler();
                 videoLoaded();
                 if (selectTrackWhenReady && isUsingContentResolution) {
