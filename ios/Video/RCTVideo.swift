@@ -235,13 +235,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                         DebugLog("The source not exist")
                         throw NSError(domain: "", code: 0, userInfo: nil)
                     }
-                    if let uri = source.uri, uri.starts(with: "ph://") {
-                        return Promise {
-                            RCTVideoUtils.preparePHAsset(uri: uri).then { asset in
-                                return self.playerItemPrepareText(asset:asset, assetOptions:nil)
-                            }
-                        }
-                    }
+
                     guard let assetResult = RCTVideoUtils.prepareAsset(source: source),
                         let asset = assetResult.asset,
                         let assetOptions = assetResult.assetOptions else {
