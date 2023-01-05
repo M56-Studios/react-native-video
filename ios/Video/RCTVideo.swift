@@ -218,19 +218,33 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     @objc
     func setSrc(_ source:NSDictionary!) {
         DispatchQueue.global(qos: .default).async {
-            _source = VideoSource(source)
-            removePlayerLayer()
-            _playerObserver.player = nil
-            _playerObserver.playerItem = nil
+            self._source = VideoSource(source)
+            if (self._source?.uri == nil || self._source?.uri == "") {
+                self._player?.replaceCurrentItem(with: nil)
+                return;
+            }
+            self.removePlayerLayer()
+            self._playerObserver.player = nil
+            self._playerObserver.playerItem = nil
 
             // perform on next run loop, otherwise other passed react-props may not be set
             RCTVideoUtils.delay()
                 .then{ [weak self] in
                     guard let self = self else {throw NSError(domain: "", code: 0, userInfo: nil)}
-                    guard let source = self._source,
-                    let assetResult = RCTVideoUtils.prepareAsset(source: source),
-                    let asset = assetResult.asset,
-                    let assetOptions = assetResult.assetOptions else {
+                    guard let source = self._source else {
+                        DebugLog("The source not exist")
+                        throw NSError(domain: "", code: 0, userInfo: nil)
+                    }
+                    if let uri = source.uri, uri.starts(with: "ph://") {
+                        return Promise {
+                            RCTVideoUtils.preparePHAsset(uri: uri).then { asset in
+                                return self.playerItemPrepareText(asset:asset, assetOptions:nil)
+                            }
+                        }
+                    }
+                    guard let assetResult = RCTVideoUtils.prepareAsset(source: source),
+                        let asset = assetResult.asset,
+                        let assetOptions = assetResult.assetOptions else {
                         DebugLog("Could not find video URL in source '\(self._source)'")
                         throw NSError(domain: "", code: 0, userInfo: nil)
                     }
@@ -254,7 +268,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                     return Promise{self.playerItemPrepareText(asset: asset, assetOptions:assetOptions)}
                 }.then{[weak self] (playerItem:AVPlayerItem!) in
                     guard let self = self else {throw  NSError(domain: "", code: 0, userInfo: nil)}
-                    
+
                     self._player?.pause()
                     self._playerItem = playerItem
                     self._playerObserver.playerItem = self._playerItem
@@ -273,7 +287,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                     if #available(iOS 10.0, *) {
                         self.setAutomaticallyWaitsToMinimizeStalling(self._automaticallyWaitsToMinimizeStalling)
                     }
-
                     //Perform on next run loop, otherwise onVideoLoadStart is nil
                     self.onVideoLoadStart?([
                         "src": [
@@ -285,8 +298,8 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                         "target": self.reactTag
                     ])
                 }.catch{_ in }
+            self._videoLoadStarted = true
         }
-        _videoLoadStarted = true
     }
     
     @objc
