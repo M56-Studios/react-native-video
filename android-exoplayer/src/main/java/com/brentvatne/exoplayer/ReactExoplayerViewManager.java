@@ -180,6 +180,8 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
                 if (srcUri != null) {
                     videoView.setRawSrc(srcUri, extension);
                 }
+            } else {
+                videoView.clearSrc();
             }
         }
     }
