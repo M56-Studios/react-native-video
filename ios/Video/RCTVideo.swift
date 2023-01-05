@@ -264,7 +264,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                     self._playerItem?.preferredPeakBitRate = Double(maxBitRate)
                 }
                 
-                self._player = AVPlayer()
+                self._player = self._player ?? AVPlayer()
                 DispatchQueue.global(qos: .default).async {
                     self._player?.replaceCurrentItem(with: playerItem)
                 }
@@ -689,6 +689,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             else
             {
                 _playerViewController?.view.removeFromSuperview()
+                _playerViewController?.removeFromParent()
                 _playerViewController = nil
                 _playerObserver.playerViewController = nil
                 self.usePlayerLayer()
@@ -821,6 +822,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         
         if let _playerViewController = _playerViewController {
             _playerViewController.view.removeFromSuperview()
+            _playerViewController.removeFromParent()
             _playerViewController.rctDelegate = nil
             _playerViewController.player = nil
             self._playerViewController = nil
