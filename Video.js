@@ -280,7 +280,7 @@ export default class Video extends Component {
     }
 
     if (!uri) {
-      console.warn('Trying to load empty source.');
+      console.log('Trying to load empty source.');
     }
 
     const isNetwork = !!(uri && uri.match(/^https?:/));
