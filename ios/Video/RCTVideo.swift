@@ -1044,7 +1044,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         
         if _repeat {
             let item:AVPlayerItem! = notification.object as? AVPlayerItem
-            item.seek(to: CMTime.zero)
+            item.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
             self.applyModifiers()
         } else {
             _playerObserver.removePlayerTimeObserver()
