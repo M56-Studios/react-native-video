@@ -222,7 +222,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         _playerObserver.playerItem = nil
 
         if #available(iOS 10.0, *) {
-            self._player = AVQueuePlayer(playerItem: playerItem)
+            self._player = self._player ?? AVQueuePlayer(playerItem: playerItem)
             self._playerItem = playerItem
             self.setUpLooper(playerItem)
             self._playerObserver.playerItem = self._playerItem
