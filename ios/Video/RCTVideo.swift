@@ -222,33 +222,53 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         _playerObserver.playerItem = nil
 
         if #available(iOS 10.0, *) {
-            self._player = self._player ?? AVQueuePlayer(playerItem: playerItem)
             self._playerItem = playerItem
-            self.setUpLooper(playerItem)
+
+            self._player = self._player ?? AVQueuePlayer()
+            (self._player as? AVQueuePlayer)?.removeAllItems()
+
+            if !self._repeat {
+                DispatchQueue.global(qos: .default).async {
+                    self._player?.replaceCurrentItem(with: playerItem)
+                }
+            }
+
+            self.setUpLooper()
+
             self._playerObserver.playerItem = self._playerItem
             self._playerObserver.player = self._player
         } else {
             self._playerItem = playerItem
-            self._playerObserver.playerItem = self._playerItem
+
             self._player = self._player ?? AVPlayer()
-            self._playerObserver.player = self._player
+            self._player?.actionAtItemEnd = .none
             DispatchQueue.global(qos: .default).async {
                 self._player?.replaceCurrentItem(with: playerItem)
             }
-        }
 
-        self._player?.actionAtItemEnd = .none
+            self._playerObserver.playerItem = self._playerItem
+            self._playerObserver.player = self._player
+        }
     }
 
     @objc
-    func setUpLooper(_ playerItem:AVPlayerItem!) {
+    func setUpLooper() {
         _playerObserver.playerLooper = nil
 
         if #available(iOS 10.0, *) {
-            if self._player != nil && playerItem != nil {
-                self._playerLooper = AVPlayerLooper(player: self._player as! AVQueuePlayer, templateItem: playerItem!)
-                self._playerObserver.playerLooper = self._playerLooper
+            (self._playerLooper as? AVPlayerLooper)?.disableLooping()
+
+            _player?.actionAtItemEnd = self._repeat ? .advance : .pause
+
+            if !self._repeat || (self._player == nil) || (self._playerItem == nil) {
+                return
             }
+
+            self._playerLooper = AVPlayerLooper(
+                player: self._player as! AVQueuePlayer,
+                templateItem: self._playerItem!
+            )
+            self._playerObserver.playerLooper = self._playerLooper
         }
     }
 
@@ -551,15 +571,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     func setRepeat(_ `repeat`: Bool) {
         _repeat = `repeat`
 
-        if _playerLooper != nil {
-            if _repeat {
-                if _player?.actionAtItemEnd == .pause {
-                    _player?.actionAtItemEnd = .advance
-                }
-            } else {
-                _player?.actionAtItemEnd = .pause
-            }
-        }
+        self.setUpLooper()
     }
     
     
