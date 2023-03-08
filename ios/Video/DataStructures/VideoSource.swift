@@ -1,14 +1,14 @@
 
-struct VideoSource {
+struct VideoSource: Comparable {
     let type: String?
     let uri: String?
     let isNetwork: Bool
     let isAsset: Bool
     let shouldCache: Bool
     let requestHeaders: Dictionary<String,Any>?
-    
+
     let json: NSDictionary?
-    
+
     init(_ json: NSDictionary!) {
         guard json != nil else {
             self.json = nil
@@ -27,5 +27,13 @@ struct VideoSource {
         self.isAsset = json["isAsset"] as? Bool ?? false
         self.shouldCache = json["shouldCache"] as? Bool ?? false
         self.requestHeaders = json["requestHeaders"] as? Dictionary<String,Any>
+    }
+
+    static func < (lhs: VideoSource, rhs: VideoSource) -> Bool {
+        return false
+    }
+
+    static func == (lhs: VideoSource, rhs: VideoSource) -> Bool {
+        return lhs.uri == rhs.uri
     }
 }
