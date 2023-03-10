@@ -1132,9 +1132,14 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     // Continue playing (or not if paused) after being paused due to hitting an unbuffered zone.
     func handlePlaybackLikelyToKeepUp(playerItem:AVPlayerItem, change:NSKeyValueObservedChange<Bool>) {
         print("RCTVideo handlePlaybackLikelyToKeepUp")
-        if (!(_controls || _fullscreenPlayerPresented) || _playerBufferEmpty) && ((_playerItem?.isPlaybackLikelyToKeepUp) != nil) {
+        if (
+            (!(_controls || _fullscreenPlayerPresented) || _playerBufferEmpty) &&
+            _playerItem?.isPlaybackLikelyToKeepUp == true
+        )
+        {
             setPaused(_paused)
         }
+
         _playerBufferEmpty = false
         onVideoBuffer?(["isBuffering": false, "target": reactTag as Any])
     }
