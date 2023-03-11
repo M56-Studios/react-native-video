@@ -253,7 +253,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
         RCTVideoUtils.delay().then { [weak self] in
             guard
-                let self,
+                let self = self,
                 let playerItem = self._playerItem,
                 let player = (self._player as? AVQueuePlayer)
             else { return }
@@ -304,7 +304,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             let replicas = 5
 
             self._playerLooper = player.observe(\.currentItem) { [weak self] player, _ in
-                guard let self else { return }
+                guard let self = self else { return }
 
                 print("RCTVideo _playerLooper")
 
