@@ -251,13 +251,22 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     func includePlayerItems(replicas: Int) {
         print("RCTVideo includePlayerItems")
 
-        guard
-            let playerItem = _playerItem,
-            let player = (self._player as? AVQueuePlayer)
-        else { return }
+        RCTVideoUtils.delay().then { [weak self] in
+            guard
+                let self,
+                let playerItem = self._playerItem,
+                let player = (self._player as? AVQueuePlayer)
+            else { return }
 
-        DispatchQueue.global(qos: .default).async {
-            for _ in 1...replicas {
+            let missingReplicas = replicas - player.items().count
+
+            if (missingReplicas < 1) {
+                return
+            }
+
+            print("RCTVideo includePlayerItems adding \(missingReplicas) playerItems")
+
+            for _ in 1...missingReplicas {
                 let item = playerItem.copy()
 
                 player.insert(
@@ -295,11 +304,14 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             let replicas = 5
 
             self._playerLooper = player.observe(\.currentItem) { [weak self] player, _ in
+                guard let self else { return }
+
                 print("RCTVideo _playerLooper")
-                self?._playerObserver.playerItem = player.currentItem
+
+                self._playerObserver.playerItem = player.currentItem
 
                 if player.items().count <= replicas {
-                    self?.includePlayerItems(replicas: replicas)
+                    self.includePlayerItems(replicas: replicas)
                 }
             }
 
