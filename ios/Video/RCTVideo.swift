@@ -10,6 +10,7 @@ import Promises
 class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverHandler {
 
     private var _player:AVPlayer?
+    private var _playerLooper: NSKeyValueObservation?
     private var _playerItem:AVPlayerItem?
     private var _source:VideoSource?
     private var _playerBufferEmpty:Bool = true
@@ -242,6 +243,101 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     // MARK: - Player and source
     @objc
+    func setUpPlayer(_ playerItem:AVPlayerItem!) {
+        _playerObserver.player = nil
+        _playerObserver.playerItem = nil
+
+        if #available(iOS 10.0, *) {
+            self._playerItem = playerItem
+
+            self._player = self._player ?? AVQueuePlayer()
+
+            self.setUpPlayerItemIos10()
+
+            self._playerObserver.player = self._player
+        } else {
+            self._playerItem = playerItem
+
+            self._player = self._player ?? AVPlayer()
+            self._player?.actionAtItemEnd = .none
+            DispatchQueue.global(qos: .default).async {
+                self._player?.replaceCurrentItem(with: playerItem)
+            }
+
+            self._playerObserver.playerItem = self._playerItem
+            self._playerObserver.player = self._player
+        }
+    }
+
+    func includePlayerItems(replicas: Int) {
+        RCTVideoUtils.delay().then { [weak self] in
+            guard
+                let self = self,
+                let playerItem = self._playerItem,
+                let player = (self._player as? AVQueuePlayer)
+            else { return }
+
+            let missingReplicas = replicas - player.items().count
+
+            if (missingReplicas < 1) {
+                return
+            }
+
+            print("RCTVideo includePlayerItems adding \(missingReplicas) playerItems")
+
+            for _ in 1...missingReplicas {
+                let item = playerItem.copy()
+
+                player.insert(
+                    item as! AVPlayerItem,
+                    after: player.items().last
+                )
+            }
+        }
+    }
+
+    func setUpPlayerItemIos10() {
+        if #available(iOS 10.0, *) {
+            guard
+                let playerItem = _playerItem,
+                let player = (_player as? AVQueuePlayer)
+            else { return }
+
+            player.removeAllItems()
+            player.actionAtItemEnd = self._repeat ? .advance : .none
+
+            if !self._repeat {
+                DispatchQueue.global(qos: .default).async {
+                    player.replaceCurrentItem(with: playerItem)
+                }
+
+                _playerObserver.playerItem = playerItem
+
+                return
+            }
+
+            _playerLooper?.invalidate()
+            _playerLooper = nil
+
+            let replicas = 5
+
+            self._playerLooper = player.observe(\.currentItem) { [weak self] player, _ in
+                guard let self = self else { return }
+
+                print("RCTVideo _playerLooper")
+
+                self._playerObserver.playerItem = player.currentItem
+
+                if player.items().count <= replicas {
+                    self.includePlayerItems(replicas: replicas)
+                }
+            }
+
+            self.includePlayerItems(replicas: replicas)
+        }
+    }
+
+    @objc
     func setSrc(_ source:NSDictionary!) {
         DispatchQueue.global(qos: .default).async {
             self._source = VideoSource(source)
@@ -296,20 +392,14 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                 }.then{[weak self] (playerItem:AVPlayerItem!) in
                     guard let self = self else {throw  NSError(domain: "", code: 0, userInfo: nil)}
 
-                    self._player?.pause()
-                    self._playerItem = playerItem
-                    self._playerObserver.playerItem = self._playerItem
                     self.setPreferredForwardBufferDuration(self._preferredForwardBufferDuration)
                     self.setFilter(self._filterName)
                     if let maxBitRate = self._maxBitRate {
                         self._playerItem?.preferredPeakBitRate = Double(maxBitRate)
                     }
 
-                    self._player = self._player ?? AVPlayer()
-                    self._player?.replaceCurrentItem(with: playerItem)
-                    self._playerObserver.player = self._player
+                    self.setUpPlayer(playerItem)
                     self.applyModifiers()
-                    self._player?.actionAtItemEnd = .none
 
                     if #available(iOS 10.0, *) {
                         self.setAutomaticallyWaitsToMinimizeStalling(self._automaticallyWaitsToMinimizeStalling)
@@ -580,7 +670,15 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     @objc
     func setRepeat(_ `repeat`: Bool) {
-        _repeat = `repeat`
+        let newRepeat = `repeat`
+
+        if newRepeat == _repeat {
+            return
+        }
+
+        _repeat = newRepeat
+
+        self.setUpPlayerItemIos10()
     }
 
 
@@ -889,6 +987,10 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     override func removeFromSuperview() {
         _player?.pause()
         _player = nil
+
+        _playerLooper?.invalidate()
+        _playerLooper = nil
+
         _resouceLoaderDelegate = nil
         _playerObserver.clearPlayer()
 
@@ -1060,9 +1162,14 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     // Continue playing (or not if paused) after being paused due to hitting an unbuffered zone.
     func handlePlaybackLikelyToKeepUp(playerItem:AVPlayerItem, change:NSKeyValueObservedChange<Bool>) {
-        if (!(_controls || _fullscreenPlayerPresented) || _playerBufferEmpty) && ((_playerItem?.isPlaybackLikelyToKeepUp) != nil) {
+        if (
+            (!(_controls || _fullscreenPlayerPresented) || _playerBufferEmpty) &&
+            _playerItem?.isPlaybackLikelyToKeepUp == true
+        )
+        {
             setPaused(_paused)
         }
+
         _playerBufferEmpty = false
         onVideoBuffer?(["isBuffering": false, "target": reactTag as Any])
     }
@@ -1124,7 +1231,13 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             _imaAdsManager.getAdsLoader()?.contentComplete()
         }
 #endif
+
         if _repeat {
+            if #available(iOS 10.0, *) {
+                // New looper setup is available
+                return
+            }
+
             let item:AVPlayerItem! = notification.object as? AVPlayerItem
             item.seek(to: CMTime.zero, completionHandler: nil)
             self.applyModifiers()
