@@ -273,7 +273,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         RCTVideoUtils.delay().then { [weak self] in
             guard
                 let self = self,
-                let playerItem = self._playerItem,
                 let player = (self._player as? AVQueuePlayer)
             else { return }
 
@@ -286,10 +285,23 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             print("RCTVideo includePlayerItems adding \(missingReplicas) playerItems")
 
             for _ in 1...missingReplicas {
-                let item = playerItem.copy()
+                guard
+                    let source = _source,
+                    let assetResult = RCTVideoUtils.prepareAsset(source: source),
+                    let asset = assetResult.asset,
+                    let assetOptions = assetResult.assetOptions
+                else {
+                    DebugLog("Could not find video URL in source '\(self._source)'")
+                    return
+                }
+
+                let item = self.playerItemPrepareText(
+                    asset: asset,
+                    assetOptions: assetOptions
+                )
 
                 player.insert(
-                    item as! AVPlayerItem,
+                    item,
                     after: player.items().last
                 )
             }
@@ -1245,16 +1257,4 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             _playerObserver.removePlayerTimeObserver()
         }
     }
-
-    //unused
-    //    @objc func handleAVPlayerAccess(notification:NSNotification!) {
-    //        let accessLog:AVPlayerItemAccessLog! = (notification.object as! AVPlayerItem).accessLog()
-    //        let lastEvent:AVPlayerItemAccessLogEvent! = accessLog.events.last
-    //
-    //        /* TODO: get this working
-    //         if (self.onBandwidthUpdate) {
-    //         self.onBandwidthUpdate(@{@"bitrate": [NSNumber numberWithFloat:lastEvent.observedBitrate]});
-    //         }
-    //         */
-    //    }
 }
