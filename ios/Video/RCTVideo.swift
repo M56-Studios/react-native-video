@@ -286,7 +286,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
             for _ in 1...missingReplicas {
                 guard
-                    let source = _source,
+                    let source = self._source,
                     let assetResult = RCTVideoUtils.prepareAsset(source: source),
                     let asset = assetResult.asset,
                     let assetOptions = assetResult.assetOptions
