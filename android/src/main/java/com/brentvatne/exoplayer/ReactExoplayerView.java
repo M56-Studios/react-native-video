@@ -4,6 +4,7 @@ import static com.google.android.exoplayer2.C.CONTENT_TYPE_DASH;
 import static com.google.android.exoplayer2.C.CONTENT_TYPE_HLS;
 import static com.google.android.exoplayer2.C.CONTENT_TYPE_OTHER;
 import static com.google.android.exoplayer2.C.CONTENT_TYPE_SS;
+import static com.google.android.exoplayer2.C.TIME_END_OF_SOURCE;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -27,6 +28,7 @@ import androidx.activity.OnBackPressedCallback;
 
 import com.brentvatne.common.Track;
 import com.brentvatne.common.VideoTrack;
+import com.brentvatne.exoplayer.AudioOutput;
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
@@ -47,6 +49,7 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.Tracks;
+import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManagerProvider;
 import com.google.android.exoplayer2.drm.DrmSessionEventListener;
@@ -93,6 +96,7 @@ import com.google.android.exoplayer2.source.dash.manifest.Representation;
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader;
 import com.google.android.exoplayer2.source.ads.AdsMediaSource;
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
+import com.google.android.exoplayer2.source.ClippingMediaSource;
 
 import com.google.common.collect.ImmutableList;
 import java.net.CookieHandler;
@@ -112,7 +116,7 @@ import java.util.concurrent.TimeUnit;
 import java.lang.Integer;
 
 @SuppressLint("ViewConstructor")
-class ReactExoplayerView extends FrameLayout implements
+public class ReactExoplayerView extends FrameLayout implements
         LifecycleEventListener,
         Player.Listener,
         BandwidthMeter.EventListener,
@@ -160,6 +164,7 @@ class ReactExoplayerView extends FrameLayout implements
     private boolean muted = false;
     private boolean hasAudioFocus = false;
     private float rate = 1f;
+    private AudioOutput audioOutput = AudioOutput.SPEAKER;
     private float audioVolume = 1f;
     private int minLoadRetryCount = 3;
     private int maxBitRate = 0;
@@ -180,6 +185,8 @@ class ReactExoplayerView extends FrameLayout implements
     // Props from React
     private int backBufferDurationMs = DefaultLoadControl.DEFAULT_BACK_BUFFER_DURATION_MS;
     private Uri srcUri;
+    private long startTimeMs = -1;
+    private long endTimeMs = -1;
     private String extension;
     private boolean repeat;
     private String audioTrackType;
@@ -649,6 +656,7 @@ class ReactExoplayerView extends FrameLayout implements
 
         PlaybackParameters params = new PlaybackParameters(rate, 1f);
         player.setPlaybackParameters(params);
+        changeAudioOutput(this.audioOutput);
     }
 
     private DrmSessionManager initializePlayerDrm(ReactExoplayerView self) {
@@ -670,7 +678,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     private void initializePlayerSource(ReactExoplayerView self, DrmSessionManager drmSessionManager) {
         ArrayList<MediaSource> mediaSourceList = buildTextSources();
-        MediaSource videoSource = buildMediaSource(self.srcUri, self.extension, drmSessionManager);
+        MediaSource videoSource = buildMediaSource(self.srcUri, self.extension, drmSessionManager, startTimeMs, endTimeMs);
         MediaSource mediaSourceWithAds = null;
         if (adTagUrl != null) {
             MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(mediaDataSourceFactory)
@@ -765,7 +773,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
-    private MediaSource buildMediaSource(Uri uri, String overrideExtension, DrmSessionManager drmSessionManager) {
+    private MediaSource buildMediaSource(Uri uri, String overrideExtension, DrmSessionManager drmSessionManager, long startTimeMs, long endTimeMs) {
         if (uri == null) {
             throw new IllegalStateException("Invalid video uri");
         }
@@ -782,7 +790,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
 
         MediaItem mediaItem = mediaItemBuilder.build();
-
+        MediaSource mediaSource = null;
         DrmSessionManagerProvider drmProvider = null;
         if (drmSessionManager != null) {
             drmProvider = new DrmSessionManagerProvider() {
@@ -796,39 +804,54 @@ class ReactExoplayerView extends FrameLayout implements
         }
         switch (type) {
             case CONTENT_TYPE_SS:
-                return new SsMediaSource.Factory(
+                mediaSource = new SsMediaSource.Factory(
                         new DefaultSsChunkSource.Factory(mediaDataSourceFactory),
                         buildDataSourceFactory(false)
                 ).setDrmSessionManagerProvider(drmProvider)
                  .setLoadErrorHandlingPolicy(
                         config.buildLoadErrorHandlingPolicy(minLoadRetryCount)
                 ).createMediaSource(mediaItem);
+                break;
             case CONTENT_TYPE_DASH:
-                return new DashMediaSource.Factory(
+                mediaSource = new DashMediaSource.Factory(
                         new DefaultDashChunkSource.Factory(mediaDataSourceFactory),
                         buildDataSourceFactory(false)
                 ).setDrmSessionManagerProvider(drmProvider)
                  .setLoadErrorHandlingPolicy(
                         config.buildLoadErrorHandlingPolicy(minLoadRetryCount)
                 ).createMediaSource(mediaItem);
+                break;
             case CONTENT_TYPE_HLS:
-                return new HlsMediaSource.Factory(
+                mediaSource = new HlsMediaSource.Factory(
                         mediaDataSourceFactory
                 ).setDrmSessionManagerProvider(drmProvider)
                  .setLoadErrorHandlingPolicy(
                         config.buildLoadErrorHandlingPolicy(minLoadRetryCount)
                 ).createMediaSource(mediaItem);
+                break;
             case CONTENT_TYPE_OTHER:
-                return new ProgressiveMediaSource.Factory(
+                mediaSource = new ProgressiveMediaSource.Factory(
                         mediaDataSourceFactory
                 ).setDrmSessionManagerProvider(drmProvider)
                  .setLoadErrorHandlingPolicy(
                         config.buildLoadErrorHandlingPolicy(minLoadRetryCount)
                 ).createMediaSource(mediaItem);
+                break;
             default: {
                 throw new IllegalStateException("Unsupported type: " + type);
             }
         }
+
+        if (startTimeMs >= 0 && endTimeMs >= 0)
+        {
+            return new ClippingMediaSource(mediaSource, startTimeMs * 1000, endTimeMs * 1000);
+        } else if (startTimeMs >= 0) {
+            return new ClippingMediaSource(mediaSource, startTimeMs * 1000, TIME_END_OF_SOURCE);
+        } else if (endTimeMs >= 0) {
+            return new ClippingMediaSource(mediaSource, 0, endTimeMs * 1000);
+        }
+
+        return mediaSource;
     }
 
     private ArrayList<MediaSource> buildTextSources() {
@@ -1034,6 +1057,7 @@ class ReactExoplayerView extends FrameLayout implements
     private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
         return DataSourceUtil.getDefaultHttpDataSourceFactory(this.themedReactContext, useBandwidthMeter ? bandwidthMeter : null, requestHeaders);
     }
+
 
     // AudioBecomingNoisyListener implementation
 
@@ -1471,11 +1495,13 @@ class ReactExoplayerView extends FrameLayout implements
 
     // ReactExoplayerViewManager public api
 
-    public void setSrc(final Uri uri, final String extension, Map<String, String> headers) {
+    public void setSrc(final Uri uri, final long startTimeMs, final long endTimeMs, final String extension, Map<String, String> headers) {
         if (uri != null) {
-            boolean isSourceEqual = uri.equals(srcUri);
+            boolean isSourceEqual = uri.equals(srcUri) && startTimeMs == this.startTimeMs && endTimeMs == this.endTimeMs;
             hasDrmFailed = false;
             this.srcUri = uri;
+            this.startTimeMs = startTimeMs;
+            this.endTimeMs = endTimeMs;
             this.extension = extension;
             this.requestHeaders = headers;
             this.mediaDataSourceFactory =
@@ -1496,6 +1522,8 @@ class ReactExoplayerView extends FrameLayout implements
             }
 
             this.srcUri = null;
+            this.startTimeMs = -1;
+            this.endTimeMs = -1;
             this.extension = null;
             this.requestHeaders = null;
             this.mediaDataSourceFactory = null;
@@ -1798,6 +1826,31 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
+    private void changeAudioOutput(AudioOutput output) {
+        if (player != null) {
+            int streamType = output.getStreamType();
+            int usage = Util.getAudioUsageForStreamType(streamType);
+            int contentType = Util.getAudioContentTypeForStreamType(streamType);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(usage)
+                    .setContentType(contentType)
+                    .build();
+            player.setAudioAttributes(audioAttributes, false);
+            AudioManager audioManager = (AudioManager) themedReactContext.getSystemService(Context.AUDIO_SERVICE);
+            boolean isSpeakerOutput = output == AudioOutput.SPEAKER;
+            audioManager.setMode(
+                    isSpeakerOutput ? AudioManager.MODE_NORMAL
+                            : AudioManager.MODE_IN_COMMUNICATION);
+            audioManager.setSpeakerphoneOn(isSpeakerOutput);
+        }
+    }
+
+    public void setAudioOutput(AudioOutput output) {
+        if (audioOutput != output) {
+            this.audioOutput = output;
+            changeAudioOutput(output);
+        }
+    }
+
     public void setVolumeModifier(float volume) {
         audioVolume = volume;
         if (player != null) {
@@ -2016,6 +2069,10 @@ class ReactExoplayerView extends FrameLayout implements
 
     public void setSubtitleStyle(SubtitleStyle style) {
         exoPlayerView.setSubtitleStyle(style);
+    }
+
+    public void setShutterColor(Integer color) {
+        exoPlayerView.setShutterColor(color);
     }
 
     @Override

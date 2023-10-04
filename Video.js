@@ -14,8 +14,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const { VideoDecoderProperties } = NativeModules
-export { TextTrackType, FilterType, DRMType, VideoDecoderProperties }
+const { VideoDecoderProperties } = NativeModules;
+export { TextTrackType, FilterType, DRMType, VideoDecoderProperties };
 
 export default class Video extends Component {
 
@@ -77,9 +77,21 @@ export default class Video extends Component {
     this.setNativeProps({ fullscreen: false });
   };
 
-  save = async (options?) => {
+  save = async (options) => {
     return await NativeModules.VideoManager.save(options, findNodeHandle(this._root));
   }
+
+  pause = async () => {
+    await this.setPlayerPauseState(true);
+  };
+
+  play = async () => {
+    await this.setPlayerPauseState(false);
+  };
+
+  setPlayerPauseState = async (paused) => {
+    return await NativeModules.VideoManager.setPlayerPauseState(paused, findNodeHandle(this._root));
+  };
 
   restoreUserInterfaceForPictureInPictureStopCompleted = (restored) => {
     this.setNativeProps({ restoreUserInterfaceForPIPStopCompletionHandler: restored });
@@ -342,6 +354,12 @@ export default class Video extends Component {
         mainVer: source.mainVer || 0,
         patchVer: source.patchVer || 0,
         requestHeaders: source.headers ? this.stringsOnlyObject(source.headers) : {},
+        startTime: source.startTime || 0,
+        endTime: source.endTime,
+        // Custom Metadata
+        title: source.title,
+        subtitle: source.subtitle,
+        description: source.description,
       },
       onVideoLoadStart: this._onLoadStart,
       onVideoPlaybackStateChanged: this._onPlaybackStateChanged,
@@ -414,13 +432,6 @@ Video.propTypes = {
     FilterType.SEPIA,
   ]),
   filterEnabled: PropTypes.bool,
-  /* Native only */
-  src: PropTypes.object,
-  seek: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.object,
-  ]),
-  fullscreen: PropTypes.bool,
   onVideoLoadStart: PropTypes.func,
   onVideoLoad: PropTypes.func,
   onVideoBuffer: PropTypes.func,
@@ -497,6 +508,13 @@ Video.propTypes = {
       language: PropTypes.string.isRequired,
     })
   ),
+  chapters: PropTypes.arrayOf(
+    PropTypes.shape({
+      title: PropTypes.string,
+      startTime: PropTypes.number.isRequired,
+      endTime: PropTypes.number.isRequired,
+    })
+  ),
   paused: PropTypes.bool,
   muted: PropTypes.bool,
   volume: PropTypes.number,
@@ -520,7 +538,7 @@ Video.propTypes = {
   disableBuffering: PropTypes.bool,
   controls: PropTypes.bool,
   audioOnly: PropTypes.bool,
-  currentTime: PropTypes.number,
+  audioOutput: PropTypes.oneOf(['earpiece', 'speaker']),
   fullscreenAutorotate: PropTypes.bool,
   fullscreenOrientation: PropTypes.oneOf(['all', 'landscape', 'portrait']),
   progressUpdateInterval: PropTypes.number,
@@ -534,6 +552,7 @@ Video.propTypes = {
   useTextureView: PropTypes.bool,
   useSecureView: PropTypes.bool,
   hideShutterView: PropTypes.bool,
+  shutterColor: PropTypes.string,
   onLoadStart: PropTypes.func,
   onPlaybackStateChanged: PropTypes.func,
   onLoad: PropTypes.func,
@@ -557,24 +576,12 @@ Video.propTypes = {
   onAudioFocusChanged: PropTypes.func,
   onAudioBecomingNoisy: PropTypes.func,
   onPictureInPictureStatusChanged: PropTypes.func,
-  needsToRestoreUserInterfaceForPictureInPictureStop: PropTypes.func,
   onExternalPlaybackChange: PropTypes.func,
   adTagUrl: PropTypes.string,
   onReceiveAdEvent: PropTypes.func,
 
   /* Required by react-native */
-  scaleX: PropTypes.number,
-  scaleY: PropTypes.number,
-  translateX: PropTypes.number,
-  translateY: PropTypes.number,
-  rotation: PropTypes.number,
   ...ViewPropTypes,
 };
 
-const RCTVideo = requireNativeComponent('RCTVideo', Video, {
-  nativeOnly: {
-    src: true,
-    seek: true,
-    fullscreen: true,
-  },
-});
+const RCTVideo = requireNativeComponent('RCTVideo');

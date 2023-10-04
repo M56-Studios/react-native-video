@@ -11,7 +11,7 @@ enum RCTVideoUtils {
      *
      * \returns The playable duration of the current player item in seconds.
      */
-    static func calculatePlayableDuration(_ player:AVPlayer?) -> NSNumber {
+    static func calculatePlayableDuration(_ player:AVPlayer?, withSource source:VideoSource?) -> NSNumber {
         guard let player = player,
               let video:AVPlayerItem = player.currentItem,
               video.status == AVPlayerItem.Status.readyToPlay else {
@@ -30,6 +30,10 @@ enum RCTVideoUtils {
         if let effectiveTimeRange = effectiveTimeRange {
             let playableDuration:Float64 = CMTimeGetSeconds(CMTimeRangeGetEnd(effectiveTimeRange))
             if playableDuration > 0 {
+                if (source?.startTime != nil) {
+                    return NSNumber(value: (playableDuration - Float64(source?.startTime ?? 0) / 1000))
+                }
+                
                 return playableDuration as NSNumber
             }
         }
@@ -311,5 +315,19 @@ enum RCTVideoUtils {
         }
 
         return (asset, assetOptions)
+    }
+    
+    static func createMetadataItems(for mapping: [AVMetadataIdentifier: Any]) -> [AVMetadataItem] {
+        return mapping.compactMap { createMetadataItem(for:$0, value:$1) }
+    }
+
+    static func createMetadataItem(for identifier: AVMetadataIdentifier,
+                                    value: Any) -> AVMetadataItem {
+        let item = AVMutableMetadataItem()
+        item.identifier = identifier
+        item.value = value as? NSCopying & NSObjectProtocol
+        // Specify "und" to indicate an undefined language.
+        item.extendedLanguageTag = "und"
+        return item.copy() as! AVMetadataItem
     }
 }
