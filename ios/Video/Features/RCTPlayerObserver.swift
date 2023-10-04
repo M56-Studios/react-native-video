@@ -106,6 +106,13 @@ class RCTPlayerObserver: NSObject {
     func addPlayerItemObservers() {
         guard let playerItem = playerItem, let _handlers = _handlers else { return }
 
+        NotificationCenter.default.addObserver(
+            _handlers,
+            selector: #selector(RCTPlayerObserverHandler.handlePlayerItemDidReachEnd(notification:)),
+            name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
+            object: playerItem
+        )
+
         _playerItemStatusObserver = playerItem.observe(\.status, options:  [.new, .old], changeHandler: _handlers.handlePlayerItemStatusChange)
         _playerPlaybackBufferEmptyObserver = playerItem.observe(\.isPlaybackBufferEmpty, options:  [.new, .old], changeHandler: _handlers.handlePlaybackBufferKeyEmpty)
         _playerPlaybackLikelyToKeepUpObserver = playerItem.observe(\.isPlaybackLikelyToKeepUp, options:  [.new, .old], changeHandler: _handlers.handlePlaybackLikelyToKeepUp)
@@ -127,7 +134,7 @@ class RCTPlayerObserver: NSObject {
 
     func addPlayerViewControllerObservers() {
         guard let playerViewController = playerViewController, let _handlers = _handlers else { return }
-        
+
         _playerViewControllerReadyForDisplayObserver = playerViewController.observe(\.isReadyForDisplay, options:  [.new], changeHandler: _handlers.handleReadyForDisplay)
 
         _playerViewControllerOverlayFrameObserver = playerViewController.contentOverlayView?.observe(\.frame, options:  [.new, .old], changeHandler: _handlers.handleViewControllerOverlayViewFrameChange)
