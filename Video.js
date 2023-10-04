@@ -371,6 +371,7 @@ export default class Video extends Component {
       onVideoProgress: this._onProgress,
       onVideoSeek: this._onSeek,
       onVideoEnd: this._onEnd,
+      onEnd: this._onEnd,
       onVideoBuffer: this._onBuffer,
       onVideoBandwidthUpdate: this._onBandwidthUpdate,
       onTimedMetadata: this._onTimedMetadata,
