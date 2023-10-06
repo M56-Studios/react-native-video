@@ -4,15 +4,17 @@ import GoogleInteractiveMediaAds
 
 class RCTIMAAdsManager: NSObject, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
 
-    private var _video:RCTVideo
+    private weak var _video: RCTVideo?
+    private var _pipEnabled:() -> Bool
 
     /* Entry point for the SDK. Used to make ad requests. */
     private var adsLoader: IMAAdsLoader!
     /* Main point of interaction with the SDK. Created by the SDK as the result of an ad request. */
     private var adsManager: IMAAdsManager!
 
-    init(video:RCTVideo!) {
+    init(video:RCTVideo!, pipEnabled:@escaping () -> Bool) {
         _video = video
+        _pipEnabled = pipEnabled
 
         super.init()
     }
@@ -23,6 +25,7 @@ class RCTIMAAdsManager: NSObject, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
 
     func requestAds() {
+        guard let _video = _video else {return}
         // Create ad display container for ad rendering.
         let adDisplayContainer = IMAAdDisplayContainer(adContainer: _video, viewController: _video.reactViewController())
 
@@ -54,6 +57,7 @@ class RCTIMAAdsManager: NSObject, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     // MARK: - IMAAdsLoaderDelegate
 
     func adsLoader(_ loader: IMAAdsLoader, adsLoadedWith adsLoadedData: IMAAdsLoadedData) {
+        guard let _video = _video else {return}
         // Grab the instance of the IMAAdsManager and set yourself as the delegate.
         adsManager = adsLoadedData.adsManager
         adsManager?.delegate = self
@@ -71,18 +75,22 @@ class RCTIMAAdsManager: NSObject, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             print("Error loading ads: " + adErrorData.adError.message!)
         }
 
-        _video.setPaused(false)
+        _video?.setPaused(false)
     }
 
     // MARK: - IMAAdsManagerDelegate
 
     func adsManager(_ adsManager: IMAAdsManager, didReceive event: IMAAdEvent) {
+        guard let _video = _video else {return}
         // Mute ad if the main player is muted
         if (_video.isMuted()) {
             adsManager.volume = 0;
         }
         // Play each ad once it has been loaded
         if event.type == IMAAdEventType.LOADED {
+            if (_pipEnabled()) {
+                return
+            }
             adsManager.start()
         }
 
@@ -102,19 +110,19 @@ class RCTIMAAdsManager: NSObject, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         }
 
         // Fall back to playing content
-        _video.setPaused(false)
+        _video?.setPaused(false)
     }
 
     func adsManagerDidRequestContentPause(_ adsManager: IMAAdsManager) {
         // Pause the content for the SDK to play ads.
-        _video.setPaused(true)
-        _video.setAdPlaying(true)
+        _video?.setPaused(true)
+        _video?.setAdPlaying(true)
     }
 
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager) {
         // Resume the content since the SDK is done playing ads (at least for now).
-        _video.setAdPlaying(false)
-        _video.setPaused(false)
+        _video?.setAdPlaying(false)
+        _video?.setPaused(false)
     }
 
     // MARK: - Helpers

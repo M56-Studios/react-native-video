@@ -48,6 +48,42 @@ class RCTVideoManager: RCTViewManager {
         })
     }
     
+    @objc(dismissFullscreenPlayer:reactTag:)
+    func dismissFullscreenPlayer(error: NSString, reactTag: NSNumber) -> Void {
+        bridge.uiManager.prependUIBlock({_ , viewRegistry in
+            let view = viewRegistry?[reactTag]
+            if !(view is RCTVideo) {
+                RCTLogError("Invalid view returned from registry, expecting RCTVideo, got: %@", String(describing: view))
+            } else if let view = view as? RCTVideo {
+                view.dismissFullscreenPlayer(error as String)
+            }
+        })
+    }
+    @objc(presentFullscreenPlayer:reactTag:)
+    func presentFullscreenPlayer(error: NSString, reactTag: NSNumber) -> Void {
+        bridge.uiManager.prependUIBlock({_ , viewRegistry in
+            let view = viewRegistry?[reactTag]
+            if !(view is RCTVideo) {
+                RCTLogError("Invalid view returned from registry, expecting RCTVideo, got: %@", String(describing: view))
+            } else if let view = view as? RCTVideo {
+                view.presentFullscreenPlayer(error as String)
+            }
+        })
+    }
+
+    @objc(setPlayerPauseState:reactTag:)
+    func setPlayerPauseState(paused: NSNumber, reactTag: NSNumber) -> Void {
+        bridge.uiManager.prependUIBlock({_ , viewRegistry in
+            let view = viewRegistry?[reactTag]
+            if !(view is RCTVideo) {
+                RCTLogError("Invalid view returned from registry, expecting RCTVideo, got: %@", String(describing: view))
+            } else if let view = view as? RCTVideo {
+                let paused = paused.boolValue
+                view.setPaused(paused)
+            }
+        })
+    }
+
     override func constantsToExport() -> [AnyHashable : Any]? {
         return [
             "ScaleNone": AVLayerVideoGravity.resizeAspect,
