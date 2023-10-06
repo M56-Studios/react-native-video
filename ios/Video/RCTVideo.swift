@@ -352,7 +352,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     @objc
     func setSrc(_ source:NSDictionary!) {
-        DispatchQueue.global(qos: .default).async {
+        let dispatchClosure = {
             self._source = VideoSource(source)
             if (self._source?.uri == nil || self._source?.uri == "") {
                 self._player?.replaceCurrentItem(with: nil)
@@ -439,6 +439,8 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                 }.catch{_ in }
             self._videoLoadStarted = true
         }
+
+        DispatchQueue.global(qos: .default).async(execute: dispatchClosure)
     }
 
     @objc
