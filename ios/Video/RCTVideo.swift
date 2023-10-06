@@ -308,6 +308,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         }
     }
 
+    // setUpPlayerItemIos10
     func setUpPlayerItemIos10() {
         if #available(iOS 10.0, *) {
             guard
