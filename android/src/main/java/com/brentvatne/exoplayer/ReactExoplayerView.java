@@ -750,7 +750,7 @@ class ReactExoplayerView extends FrameLayout implements
                 // When DRM fails using L1 we want to switch to L3
                 mediaDrm.setPropertyString("securityLevel", "L3");
             }
-            return new DefaultDrmSessionManager(uuid, mediaDrm, drmCallback, null, false, 3);
+            return new DefaultDrmSessionManager(uuid, mediaDrm, drmCallback, null, false, 3, false, null, 300000);
         } catch(UnsupportedDrmException ex) {
             // Unsupported DRM exceptions are handled by the calling method
             throw ex;
