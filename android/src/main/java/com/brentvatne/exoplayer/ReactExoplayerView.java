@@ -733,7 +733,7 @@ class ReactExoplayerView extends FrameLayout implements
         return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, 0);
     }
 
-    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) throws UnsupportedDrmException {
+    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) {
         if (Util.SDK_INT < 18) {
             return null;
         }
@@ -747,12 +747,8 @@ class ReactExoplayerView extends FrameLayout implements
             }
 
             DrmSessionManagerProvider drmProvider = new DefaultDrmSessionManagerProvider();
-
             return drmProvider.get(null); // Since we don't have MediaItem in this context, passing null. Adjust if necessary.
 
-        } catch(UnsupportedDrmException ex) {
-            // Unsupported DRM exceptions are handled by the calling method
-            throw ex;
         } catch (Exception ex) {
             if (retryCount < 3) {
                 // Attempt retry 3 times in case where the OS Media DRM Framework fails for whatever reason
@@ -763,6 +759,7 @@ class ReactExoplayerView extends FrameLayout implements
             return null;
         }
     }
+
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension, DrmSessionManager drmSessionManager) {
         if (uri == null) {
