@@ -733,47 +733,36 @@ class ReactExoplayerView extends FrameLayout implements
         return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, 0);
     }
 
- private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) throws UnsupportedDrmException {
-    if (Util.SDK_INT < 18) {
-        return null;
-    }
-    try {
-        HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(licenseUrl,
-                buildHttpDataSourceFactory(false));
-        if (keyRequestPropertiesArray != null) {
-            for (int i = 0; i < keyRequestPropertiesArray.length - 1; i += 2) {
-                drmCallback.setKeyRequestProperty(keyRequestPropertiesArray[i], keyRequestPropertiesArray[i + 1]);
-            }
+    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) throws UnsupportedDrmException {
+        if (Util.SDK_INT < 18) {
+            return null;
         }
-
-        DrmSessionManagerProvider drmProvider;
-        if (drmSessionManager != null) { // Assuming drmSessionManager is a class member
-            drmProvider = new DrmSessionManagerProvider() {
-                @Override
-                public DrmSessionManager get(MediaItem mediaItem) {
-                    return drmSessionManager;
+        try {
+            HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(licenseUrl,
+                    buildHttpDataSourceFactory(false));
+            if (keyRequestPropertiesArray != null) {
+                for (int i = 0; i < keyRequestPropertiesArray.length - 1; i += 2) {
+                    drmCallback.setKeyRequestProperty(keyRequestPropertiesArray[i], keyRequestPropertiesArray[i + 1]);
                 }
-            };
-        } else {
-            drmProvider = new DefaultDrmSessionManagerProvider();
-        }
+            }
 
-        return drmProvider.get(null); // Since we don't have MediaItem in this context, passing null. Adjust if necessary.
+            DrmSessionManagerProvider drmProvider = new DefaultDrmSessionManagerProvider();
 
-    } catch(UnsupportedDrmException ex) {
-        // Unsupported DRM exceptions are handled by the calling method
-        throw ex;
-    } catch (Exception ex) {
-        if (retryCount < 3) {
-            // Attempt retry 3 times in case where the OS Media DRM Framework fails for whatever reason
-            return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, ++retryCount);
+            return drmProvider.get(null); // Since we don't have MediaItem in this context, passing null. Adjust if necessary.
+
+        } catch(UnsupportedDrmException ex) {
+            // Unsupported DRM exceptions are handled by the calling method
+            throw ex;
+        } catch (Exception ex) {
+            if (retryCount < 3) {
+                // Attempt retry 3 times in case where the OS Media DRM Framework fails for whatever reason
+                return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, ++retryCount);
+            }
+            // Handle the unknown exception and emit to JS
+            eventEmitter.error(ex.toString(), ex, "3006");
+            return null;
         }
-        // Handle the unknown exception and emit to JS
-        eventEmitter.error(ex.toString(), ex, "3006");
-        return null;
     }
-}
-
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension, DrmSessionManager drmSessionManager) {
         if (uri == null) {
