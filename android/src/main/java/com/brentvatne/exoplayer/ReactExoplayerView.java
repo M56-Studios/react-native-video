@@ -1558,14 +1558,19 @@ class ReactExoplayerView extends FrameLayout implements
         this.preventsDisplaySleepDuringVideoPlayback = preventsDisplaySleepDuringVideoPlayback;
     }
 
-    public void disableTrack(int rendererIndex) {
-        DefaultTrackSelector.Parameters disableParameters = trackSelector.getParameters()
-                .buildUpon()
-                .setRendererDisabled(rendererIndex, true)
-                .build();
-        trackSelector.setParameters(disableParameters);
+    public void disableTrack() {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null) {
+            DefaultTrackSelector.ParametersBuilder parametersBuilder = trackSelector.getParameters().buildUpon();
+            for (int rendererIndex = 0; rendererIndex < mappedTrackInfo.getRendererCount(); rendererIndex++) {
+                if (mappedTrackInfo.getRendererType(rendererIndex) == C.TRACK_TYPE_AUDIO) {
+                    parametersBuilder.setRendererDisabled(rendererIndex, true);
+                }
+            }
+            trackSelector.setParameters(parametersBuilder);
+        }
     }
-
+ 
     public void setSelectedTrack(int trackType, String type, Dynamic value) {
         if (player == null) return;
         int rendererIndex = getTrackRendererIndex(trackType);
