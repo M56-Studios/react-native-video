@@ -1592,7 +1592,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
 
         if (type.equals("disabled")) {
-            disableTrack(rendererIndex);
+            disableTrack();
             return;
         } else if (type.equals("language")) {
             for (int i = 0; i < groups.length; ++i) {
@@ -1710,7 +1710,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
 
         if (groupIndex == C.INDEX_UNSET) {
-            disableTrack(rendererIndex);
+            disableTrack();
             return;
         }
 
