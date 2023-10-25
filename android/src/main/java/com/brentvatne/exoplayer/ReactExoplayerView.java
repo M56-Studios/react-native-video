@@ -343,7 +343,15 @@ public class ReactExoplayerView extends FrameLayout implements
     }
 
     public void forceRefreshPlayer() {
-        // clearSrc();
+        test();
+    }
+
+    private void test() {
+        isInBackground = true;
+        if (playInBackground) {
+            return;
+        }
+        setPlayWhenReady(false);
     }
 
     //BandwidthMeter.EventListener implementation
