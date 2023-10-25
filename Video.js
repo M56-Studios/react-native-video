@@ -77,9 +77,9 @@ export default class Video extends Component {
     this.setNativeProps({ fullscreen: false });
   };
 
-  cleanUpResources = () => {
+  forceRefreshPlayer = () => {
     if (Platform.OS === 'android') {
-      VideoModule.cleanUpResources();
+      VideoModule.forceRefreshPlayer();
     }
   }
 

@@ -26,9 +26,9 @@ public class VideoModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void cleanUpResources() {
+    public void forceRefreshPlayer() {
         if (videoView != null) {
-            videoView.cleanUpResources();
+            videoView.forceRefreshPlayer();
         }
     }
 }

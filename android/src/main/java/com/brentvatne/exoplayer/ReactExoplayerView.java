@@ -342,6 +342,11 @@ public class ReactExoplayerView extends FrameLayout implements
         stopPlayback();
     }
 
+    public void forceRefreshPlayer() {
+        releasePlayer();
+        initializePlayer();
+    }
+
     //BandwidthMeter.EventListener implementation
     @Override
     public void onBandwidthSample(int elapsedMs, long bytes, long bitrate) {
