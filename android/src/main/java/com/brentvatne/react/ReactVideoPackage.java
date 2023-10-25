@@ -1,6 +1,5 @@
 package com.brentvatne.react;
 
-import com.brentvatne.react.VideoModule;
 import com.brentvatne.exoplayer.DefaultReactExoplayerConfig;
 import com.brentvatne.exoplayer.ReactExoplayerConfig;
 import com.brentvatne.exoplayer.ReactExoplayerViewManager;
