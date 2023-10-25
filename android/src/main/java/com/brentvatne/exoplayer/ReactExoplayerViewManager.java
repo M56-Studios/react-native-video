@@ -25,8 +25,6 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.brentvatne.react.VideoModule;
-
 public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerView> {
 
     private static final String REACT_CLASS = "RCTVideo";

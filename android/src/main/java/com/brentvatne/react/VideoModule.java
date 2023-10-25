@@ -1,4 +1,4 @@
-package com.brentvatne.exoplayer;
+package com.brentvatne.react;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
