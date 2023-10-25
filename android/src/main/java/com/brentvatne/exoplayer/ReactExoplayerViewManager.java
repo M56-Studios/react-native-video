@@ -1,5 +1,7 @@
 package com.brentvatne.exoplayer;
 
+import com.brentvatne.react.VideoModule;
+
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
