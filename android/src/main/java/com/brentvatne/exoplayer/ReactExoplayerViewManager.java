@@ -1,5 +1,7 @@
 package com.brentvatne.exoplayer;
 
+import com.brentvatne.react.VideoModule;
+
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -96,7 +98,11 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
 
     @Override
     protected ReactExoplayerView createViewInstance(ThemedReactContext themedReactContext) {
-        return new ReactExoplayerView(themedReactContext, config);
+        ReactExoplayerView view = new ReactExoplayerView(themedReactContext, config);
+
+        VideoModule.setVideoView(view);
+
+        return view;
     }
 
     @Override

@@ -14,8 +14,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const { VideoDecoderProperties } = NativeModules
-export { TextTrackType, FilterType, DRMType, VideoDecoderProperties }
+const { VideoDecoderProperties, VideoModule } = NativeModules;
+export { TextTrackType, FilterType, DRMType, VideoDecoderProperties };
 
 export default class Video extends Component {
 
@@ -76,6 +76,12 @@ export default class Video extends Component {
   dismissFullscreenPlayer = () => {
     this.setNativeProps({ fullscreen: false });
   };
+
+  forceRefreshPlayer = () => {
+    if (Platform.OS === 'android') {
+      VideoModule.forceRefreshPlayer();
+    }
+  }
 
   save = async (options?) => {
     return await NativeModules.VideoManager.save(options, findNodeHandle(this._root));

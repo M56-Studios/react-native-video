@@ -112,7 +112,7 @@ import java.util.concurrent.TimeUnit;
 import java.lang.Integer;
 
 @SuppressLint("ViewConstructor")
-class ReactExoplayerView extends FrameLayout implements
+public class ReactExoplayerView extends FrameLayout implements
         LifecycleEventListener,
         Player.Listener,
         BandwidthMeter.EventListener,
@@ -340,6 +340,18 @@ class ReactExoplayerView extends FrameLayout implements
 
     public void cleanUpResources() {
         stopPlayback();
+    }
+
+    public void forceRefreshPlayer() {
+        test();
+    }
+
+    private void test() {
+        isInBackground = true;
+        if (playInBackground) {
+            return;
+        }
+        setPlayWhenReady(false);
     }
 
     //BandwidthMeter.EventListener implementation
@@ -733,7 +745,7 @@ class ReactExoplayerView extends FrameLayout implements
         return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, 0);
     }
 
-    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) throws UnsupportedDrmException {
+    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, int retryCount) {
         if (Util.SDK_INT < 18) {
             return null;
         }
@@ -745,25 +757,21 @@ class ReactExoplayerView extends FrameLayout implements
                     drmCallback.setKeyRequestProperty(keyRequestPropertiesArray[i], keyRequestPropertiesArray[i + 1]);
                 }
             }
-            FrameworkMediaDrm mediaDrm = FrameworkMediaDrm.newInstance(uuid);
-            if (hasDrmFailed) {
-                // When DRM fails using L1 we want to switch to L3
-                mediaDrm.setPropertyString("securityLevel", "L3");
-            }
-            return new DefaultDrmSessionManager(uuid, mediaDrm, drmCallback, null, false, 3);
-        } catch(UnsupportedDrmException ex) {
-            // Unsupported DRM exceptions are handled by the calling method
-            throw ex;
+
+            DrmSessionManagerProvider drmProvider = new DefaultDrmSessionManagerProvider();
+            return drmProvider.get(null); // Since we don't have MediaItem in this context, passing null. Adjust if necessary.
+
         } catch (Exception ex) {
             if (retryCount < 3) {
                 // Attempt retry 3 times in case where the OS Media DRM Framework fails for whatever reason
                 return buildDrmSessionManager(uuid, licenseUrl, keyRequestPropertiesArray, ++retryCount);
             }
-            // Handle the unknow exception and emit to JS
+            // Handle the unknown exception and emit to JS
             eventEmitter.error(ex.toString(), ex, "3006");
             return null;
         }
     }
+
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension, DrmSessionManager drmSessionManager) {
         if (uri == null) {
