@@ -343,8 +343,7 @@ public class ReactExoplayerView extends FrameLayout implements
     }
 
     public void forceRefreshPlayer() {
-        releasePlayer();
-        initializePlayer();
+        clearSrc();
     }
 
     //BandwidthMeter.EventListener implementation
