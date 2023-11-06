@@ -1,5 +1,36 @@
 ## Changelog
 
+## Next
+- iOS, Android: expose playback functions to ref [#3245](https://github.com/react-native-video/react-native-video/pull/3245)
+- Windows: fix build error from over-specified SDK version [#3246](https://github.com/react-native-video/react-native-video/pull/3246)
+- Windows: fix `onError` not being raised [#3247](https://github.com/react-native-video/react-native-video/pull/3247)
+- **BREAKING CHANGE**❗️Android: update isCodecSupported to return enum [#3254](https://github.com/react-native-video/react-native-video/pull/3254)
+
+### Version 6.0.0-alpha.8
+- All: Playing audio over earpiece [#2887](https://github.com/react-native-video/react-native-video/issues/2887)
+- All: Prepare for fabric [#3175](https://github.com/react-native-video/react-native-video/pull/3175) [#]()
+- iOS: Fix Pip [#3221](https://github.com/react-native-video/react-native-video/pull/3221)
+- iOS: Fix regression in presentFullscreenPlayer & dismissFullscreenPlayer [#3230](https://github.com/react-native-video/react-native-video/pull/3230)
+- tvOS: Fix build [#3207](https://github.com/react-native-video/react-native-video/pull/3207)
+- tvOS: Add sample [#3208](https://github.com/react-native-video/react-native-video/pull/3208)
+- tvOS: Allow chapter customization [#3216](https://github.com/react-native-video/react-native-video/pull/3216)
+- doc: Fix internal links [#3229](https://github.com/react-native-video/react-native-video/pull/3229)
+
+### Version 6.0.0-alpha.7
+- All: clean JS warnings (https://github.com/react-native-video/react-native-video/pull/3183)
+- Android: Add shutterView color configurtion (https://github.com/react-native-video/react-native-video/pull/3179)
+- Android: React native 0.73 support (https://github.com/react-native-video/react-native-video/pull/3163)
+- Android: Fix memory leaks from AudioManager [#3123](https://github.com/react-native-video/react-native-video/pull/3123)
+- Android: Fixed syntax error [#3182](https://github.com/react-native-video/react-native-video/issues/3182)
+- iOS: Fix freeze at playback startup (https://github.com/react-native-video/react-native-video/pull/3173)
+- iOS: Various safety checks (https://github.com/react-native-video/react-native-video/pull/3168)
+
+### Version 6.0.0-alpha.6
+- Feature: Video range support [#3030](https://github.com/react-native-video/react-native-video/pull/3030)
+- iOS: remove undocumented `currentTime` property [#3064](https://github.com/react-native-video/react-native-video/pull/3064)
+- iOS: make sure that the audio in ads is muted when the player is muted. [#3068](https://github.com/react-native-video/react-native-video/pull/3077)
+- iOS: make IMA build optionnal
+
 ### Version 6.0.0-alpha.5
 
 - iOS: ensure controls are not displayed when disabled by user [#3017](https://github.com/react-native-video/react-native-video/pull/3017)

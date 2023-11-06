@@ -1,8 +1,9 @@
 {
     "name": "react-native-video",
-    "version": "6.0.0-alpha.5",
+    "version": "6.0.0-alpha.8",
     "description": "A <Video /> element for react-native",
     "main": "Video.js",
+    "source": "Video.js",
     "license": "MIT",
     "author": "Community Contributors",
     "homepage": "https://github.com/react-native-video/react-native-video#readme",
@@ -22,9 +23,14 @@
         "keymirror": "^0.1.1",
         "prop-types": "^15.7.2"
     },
+    "peerDependencies": {
+        "react": "*",
+        "react-native": "*"
+    },
     "scripts": {
         "lint": "yarn eslint .",
-        "xbasic": "yarn --cwd examples/basic"
+        "xbasic": "yarn --cwd examples/basic",
+        "test": "echo no test available"
     },
     "files": [
         "android",
